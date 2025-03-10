@@ -77,8 +77,11 @@ const resetPassword = async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+// 🟠 Get Staff Profile
+const db = require('../config/db'); // Assuming db.js exports MySQL connection
+
 
 module.exports = {
   login,
-  resetPassword
+  resetPassword,
 };

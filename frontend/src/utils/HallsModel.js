@@ -29,7 +29,6 @@ const FACILITIES = {
       image: '/api/placeholder/400/250',
       description: 'Modern seminar hall with multimedia capabilities',
       location: 'Main Building, 1st Floor',
-      hourlyRate: 1500
     },
     {
       id: 2,
@@ -39,7 +38,7 @@ const FACILITIES = {
       image: '/api/placeholder/400/250',
       description: 'Professional conference room for meetings and discussions',
       location: 'Administrative Block, 2nd Floor',
-      hourlyRate: 1000
+  
     },
     {
       id: 3,

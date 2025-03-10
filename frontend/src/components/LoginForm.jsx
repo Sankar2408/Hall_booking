@@ -37,7 +37,8 @@ const LoginForm = () => {
       if (data.isFirstLogin) {
         setIsResetPassword(true);
       } else {
-        navigate('/departments');
+        // Navigate to StaffView instead of departments
+        navigate('/staffview');
       }
     } catch (error) {
       setError(error.message);
@@ -77,7 +78,7 @@ const LoginForm = () => {
         localStorage.setItem('token', data.token);
       }
 
-      navigate('/departments');
+      navigate('/staffview'); // Navigate to StaffView after password reset
     } catch (error) {
       setError(error.message);
     }
