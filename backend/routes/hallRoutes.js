@@ -1,21 +1,36 @@
 // routes/hallRoutes.js
-// Add this new route to your existing hallRoutes.js file
-
 const express = require('express');
 const router = express.Router();
 const hallController = require('../controllers/hallController');
 
-// Existing routes
+// Get all halls
 router.get('/', hallController.getAllHalls);
-router.get('/active', hallController.getActiveHalls);
-router.get('/department/:deptId', hallController.getHallsByDepartment);
-router.get('/:id', hallController.getHallById);
-router.post('/', hallController.createHall);
-router.put('/:id', hallController.updateHall);
-router.delete('/:id', hallController.deleteHall);
-router.patch('/:id/status', hallController.toggleHallStatus);
 
-// Add new route for checking hall availability
+// Get active halls
+router.get('/active', hallController.getActiveHalls);
+
+// Get halls by department
+router.get('/department/:deptId', hallController.getHallsByDepartment);
+
+// Get hall by ID
+router.get('/:id', hallController.getHallById);
+
+// Check hall availability
 router.post('/availability', hallController.checkHallsAvailability);
+
+router.get('/ava', hallController.getAvailableHalls);
+
+
+// Add a new hall
+router.post('/', hallController.createHall);
+
+// Update a hall
+router.put('/:id', hallController.updateHall);
+
+// Toggle hall status
+router.patch('/status/:id', hallController.toggleHallStatus);
+
+// Delete a hall
+router.delete('/:id', hallController.deleteHall);
 
 module.exports = router;

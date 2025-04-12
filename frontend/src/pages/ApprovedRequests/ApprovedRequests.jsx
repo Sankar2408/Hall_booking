@@ -1,10 +1,72 @@
-import React from "react";
-import useRequestStore from "../../Dummy/requestStore";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import { Clock, MapPin, User, FileText, Calendar, CheckCircle, Building } from "lucide-react";
 
 const ApprovedRequests = () => {
-  const { requests } = useRequestStore();
-  const approvedRequests = requests.filter((req) => req.status === "Approved");
+  const [approvedRequests, setApprovedRequests] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchApprovedRequests = async () => {
+      try {
+        setIsLoading(true);
+        // Updated API endpoint to match json-server filtering syntax
+        const response = await axios.get('http://localhost:5000/api/admin-bookings/bookings', {
+          params: {
+            status: 'approved'
+          }
+        });
+        
+        // Transform the API response to match the component's expected structure
+        const transformedRequests = response.data.map(booking => ({
+          hallId: booking.hall_id,
+          hallName: booking.hall_name,
+          staffName: booking.staff_name,
+          staffId: booking.id,
+          location: booking.hall_name,
+          timeSlot: `${booking.time_from} - ${booking.time_to}`,
+          requestedTime: booking.date,
+          approvedTime: booking.updated_at,
+          reason: booking.reason,
+          status: booking.status
+        }));
+
+        setApprovedRequests(transformedRequests);
+        setIsLoading(false);
+      } catch (err) {
+        console.error('Error fetching approved requests:', err);
+        setError(err);
+        setIsLoading(false);
+      }
+    };
+
+    fetchApprovedRequests();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="max-w-6xl mx-auto px-4 py-8 bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading approved requests...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-6xl mx-auto px-4 py-8 bg-gray-50 min-h-screen">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <strong className="font-bold">Error! </strong>
+          <span className="block sm:inline">
+            Failed to fetch approved requests
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 bg-gray-50 min-h-screen">
@@ -53,7 +115,7 @@ const ApprovedRequests = () => {
                       <p className="text-sm text-gray-600">
                         <span className="font-medium">Staff:</span> {request.staffName}
                       </p>
-                      <p className="text-xs text-gray-500">ID: {request.staffId}</p>
+                      <p className="text-xs text-gray-500">ID: {request.staffId || 'N/A'}</p>
                     </div>
                   </div>
 

@@ -16,6 +16,7 @@ CREATE TABLE staff (
     full_name VARCHAR(255) NOT NULL,
     department VARCHAR(100) NOT NULL,
     is_first_login BOOLEAN DEFAULT TRUE,
+    role varchar(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
@@ -178,3 +179,80 @@ CREATE INDEX idx_halls_dept ON Halls(DeptID);
 CREATE INDEX idx_halls_status ON Halls(ActiveStatus);
 CREATE INDEX idx_bookings_hall ON Bookings(HallID);
 CREATE INDEX idx_bookings_date ON Bookings(BookingDate);
+
+
+
+
+
+
+/*
+  # Create Bookings Table
+
+  1. New Tables
+    - `bookings`
+      - `id` (serial, primary key)
+      - `hall_id` (integer, references halls)
+      - `hall_name` (text)
+      - `staff_name` (text)
+      - `staff_email` (text)
+      - `staff_phone` (text)
+      - `reason` (text)
+      - `date` (date)
+      - `time_from` (time)
+      - `time_to` (time)
+      - `status` (text)
+      - `created_at` (timestamp)
+      - `updated_at` (timestamp)
+
+  2. Indexes
+    - Index on hall_id and date for faster booking conflict checks
+    - Index on status for filtering
+*/
+
+CREATE TABLE IF NOT EXISTS bookings (
+  id SERIAL PRIMARY KEY,
+  hall_id INTEGER NOT NULL,
+  hall_name TEXT NOT NULL,
+  staff_name TEXT NOT NULL,
+  staff_email TEXT NOT NULL,
+  staff_phone TEXT NOT NULL,
+  reason TEXT NOT NULL,
+  date DATE NOT NULL,
+  time_from TIME NOT NULL,
+  time_to TIME NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_bookings_hall_date ON bookings(hall_id, date);
+CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);
+
+-- Trigger to update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER update_bookings_updated_at
+    BEFORE UPDATE ON bookings
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+
+
+
+    DELIMITER //
+
+CREATE TRIGGER update_bookings_updated_at
+BEFORE UPDATE ON bookings
+FOR EACH ROW
+BEGIN
+    SET NEW.updated_at = CURRENT_TIMESTAMP;
+END;
+//
+
+DELIMITER ;

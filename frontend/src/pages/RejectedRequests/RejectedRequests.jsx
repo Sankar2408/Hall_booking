@@ -1,12 +1,53 @@
-import React from "react";
-import useRequestStore from "../../Dummy/requestStore";
-import { Clock, MapPin, User, FileText, Calendar, XCircle, Building } from "lucide-react";
-
+import React, { useState, useEffect } from 'react';
+import { Clock, MapPin, User, FileText, Calendar, XCircle, Building } from 'lucide-react';
+import Navbar from '../../components/Navbar';
 const RejectedRequests = () => {
-  const { requests } = useRequestStore();
-  const rejectedRequests = requests.filter((req) => req.status === "Rejected");
+  const [rejectedRequests, setRejectedRequests] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchRejectedRequests = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/admin-bookings/bookings?status=rejected');
+        if (!response.ok) {
+          throw new Error('Failed to fetch rejected requests');
+        }
+        const data = await response.json();
+        setRejectedRequests(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRejectedRequests();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+     
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-white rounded-lg shadow p-8 text-center">
+          <XCircle className="text-red-500 w-16 h-16 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-800 mb-2">Error Loading Requests</h3>
+          <p className="text-gray-600">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
+
     <div className="max-w-6xl mx-auto px-4 py-8 bg-gray-50 min-h-screen">
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -29,7 +70,7 @@ const RejectedRequests = () => {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {rejectedRequests.map((request) => (
-            <div key={request.hallId} className="bg-white rounded-lg shadow overflow-hidden border-t-4 border-red-500">
+            <div key={request.id} className="bg-white rounded-lg shadow overflow-hidden border-t-4 border-red-500">
               <div className="p-5">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-start gap-3">
@@ -37,8 +78,8 @@ const RejectedRequests = () => {
                       <Building className="text-red-600" size={20} />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-800">{request.hallName}</h3>
-                      <p className="text-gray-500 text-sm">ID: {request.hallId}</p>
+                      <h3 className="text-lg font-semibold text-gray-800">{request.hall_name}</h3>
+                      <p className="text-gray-500 text-sm">ID: {request.hall_id}</p>
                     </div>
                   </div>
                   <span className="bg-red-100 text-red-600 py-1 px-2 rounded text-xs font-medium">
@@ -51,24 +92,17 @@ const RejectedRequests = () => {
                     <User className="text-gray-400 mt-1" size={16} />
                     <div>
                       <p className="text-sm text-gray-600">
-                        <span className="font-medium">Staff:</span> {request.staffName}
+                        <span className="font-medium">Staff:</span> {request.staff_name}
                       </p>
-                      <p className="text-xs text-gray-500">ID: {request.staffId}</p>
+                      <p className="text-xs text-gray-500">Email: {request.staff_email}</p>
                     </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <MapPin className="text-gray-400 mt-1" size={16} />
-                    <p className="text-sm text-gray-600">
-                      <span className="font-medium">Location:</span> {request.location}
-                    </p>
                   </div>
 
                   <div className="flex items-start gap-3">
                     <Clock className="text-gray-400 mt-1" size={16} />
                     <div>
                       <p className="text-sm text-gray-600">
-                        <span className="font-medium">Time Slot:</span> {request.timeSlot}
+                        <span className="font-medium">Time:</span> {request.time_from} - {request.time_to}
                       </p>
                     </div>
                   </div>
@@ -77,10 +111,10 @@ const RejectedRequests = () => {
                     <Calendar className="text-gray-400 mt-1" size={16} />
                     <div className="text-sm">
                       <p className="text-gray-600">
-                        <span className="font-medium">Requested:</span> {request.requestedTime}
+                        <span className="font-medium">Date:</span> {new Date(request.date).toLocaleDateString()}
                       </p>
                       <p className="text-red-600">
-                        <span className="font-medium">Rejected:</span> {request.rejectedTime || "Not Set"}
+                        <span className="font-medium">Rejected on:</span> {new Date(request.updated_at).toLocaleString()}
                       </p>
                     </div>
                   </div>

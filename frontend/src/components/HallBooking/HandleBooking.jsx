@@ -1,303 +1,250 @@
-import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import axios from 'axios';
+import { format } from 'date-fns';
+import { Calendar, Clock, Users, MapPin, Monitor, Snowflake, BookOpen, Send, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 
-const HandleBooking = ({ onBookingSuccess, onBookingError }) => {
+const API_URL = "http://localhost:5000/api";
+
+const HandleBooking = () => {
+  const navigate = useNavigate();
   const location = useLocation();
-  const { hall, selectedDate, selectedTimeSlot } = location.state || {};
+  const { hallId } = useParams();
+  const { hall, selectedDate, selectedTimeSlot, department } = location.state || {};
   
-  const [formData, setFormData] = useState({
-    department: '',
-    hallForBooking: hall?.name || '',
-    date: '',
-    timeFrom: '',
-    timeTo: '',
-    reason: ''
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Parse and set the time values and date when component mounts
-  useEffect(() => {
-    if (selectedTimeSlot && selectedDate) {
-      // Parse the selected date string back to a Date object
-      const parsedDate = new Date(selectedDate);
-      const formattedDate = parsedDate.toISOString().split('T')[0];
-      
-      // Parse the time slot string (e.g., "9:00 AM - 10:00 AM")
-      const [startTime, endTime] = selectedTimeSlot.split(' - ');
-      
-      // Convert to 24-hour format for the form inputs
-      const timeFrom = convertTo24Hour(startTime);
-      const timeTo = convertTo24Hour(endTime);
-      
-      setFormData(prevState => ({
-        ...prevState,
-        date: formattedDate,
-        timeFrom,
-        timeTo
-      }));
-    }
-  }, [selectedTimeSlot, selectedDate]);
-
-  // Helper function to convert 12-hour time format to 24-hour format
-  const convertTo24Hour = (time12h) => {
-    const [time, modifier] = time12h.split(' ');
-    let [hours, minutes] = time.split(':');
-    
-    if (hours === '12') {
-      hours = '00';
-    }
-    
-    if (modifier === 'PM' && hours !== '12') {
-      hours = parseInt(hours, 10) + 12;
-    }
-    
-    return `${hours}:${minutes}`;
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prevState => ({
-      ...prevState,
-      [name]: value
-    }));
-  };
-
+  const [purpose, setPurpose] = useState('');
+  const [attendees, setAttendees] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  
+  // Get current user from localStorage or context
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  
+  if (!hall || !selectedDate || !selectedTimeSlot || !department) {
+    return (
+      <div className="bg-gray-50 min-h-screen p-6">
+        <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-md p-6">
+          <div className="text-center">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <p className="text-lg text-gray-700">Booking information not found.</p>
+            <button 
+              onClick={() => navigate('/')} 
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Return to Departments
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Parse time slot to get start and end times
+  const [startTime, endTime] = selectedTimeSlot.split(' - ');
+  
+  // Format date for display
+  const formattedDate = format(new Date(selectedDate), 'EEEE, MMMM d, yyyy');
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    try {
-      setIsSubmitting(true);
-      
-      // Validate time range
-      const startTime = new Date(`2000-01-01T${formData.timeFrom}`);
-      const endTime = new Date(`2000-01-01T${formData.timeTo}`);
-      
-      if (endTime <= startTime) {
-        throw new Error('End time must be after start time');
-      }
-      
-      // Add hall ID to the form data
-      const bookingData = {
-        ...formData,
-        hallId: hall.id
-      };
-      
-      // Send booking request to API
-      const response = await axios.post('/api/bookings', bookingData);
-      
-      // Handle successful booking
-      if (onBookingSuccess) {
-        onBookingSuccess(response.data);
-      }
-      
-    } catch (error) {
-      // Extract error message
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to submit booking';
-      if (onBookingError) {
-        onBookingError(errorMessage);
-      }
-    } finally {
-      setIsSubmitting(false);
+    if (!purpose.trim()) {
+      setError('Please provide a purpose for your booking');
+      return;
     }
-  };
-
-  const handleReset = () => {
-    if (selectedTimeSlot && selectedDate) {
-      // If we have selected time and date, reset to those values
-      const parsedDate = new Date(selectedDate);
-      const formattedDate = parsedDate.toISOString().split('T')[0];
-      const [startTime, endTime] = selectedTimeSlot.split(' - ');
-      
-      setFormData({
-        department: '',
-        hallForBooking: hall?.name || '',
-        date: formattedDate,
-        timeFrom: convertTo24Hour(startTime),
-        timeTo: convertTo24Hour(endTime),
-        reason: ''
-      });
-    } else {
-      // Otherwise reset to empty
-      setFormData({
-        department: '',
-        hallForBooking: hall?.name || '',
-        date: '',
-        timeFrom: '',
-        timeTo: '',
-        reason: ''
-      });
-    }
-  };
-
-  // Check if selected date is valid (not in the past)
-  const isDateValid = (selectedDate) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
     
-    const dateToCheck = new Date(selectedDate);
-    return dateToCheck >= today;
+    if (!attendees.trim()) {
+      setError('Please provide the expected number of attendees');
+      return;
+    }
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await axios.post(`${API_URL}/dept-bookings`, {
+        hallId: hall.id,
+        bookingDate: selectedDate,
+        startTime,
+        endTime,
+        purpose,
+        attendees,
+        department
+      }, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      setSuccess('Hall booked successfully!');
+      setTimeout(() => {
+        navigate(`/booking-confirmation/${response.data.booking.BookingID}`, {
+          state: { booking: response.data.booking }
+        });
+      }, 2000);
+    } catch (err) {
+      console.error("Error creating booking:", err);
+      setError(err.response?.data?.error || 'Failed to create booking. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
-
+  
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-lg font-semibold mb-4">Fill the following details and click submit to book the hall</h2>
-      
-      <div className="mb-6 bg-blue-50 p-4 rounded-md">
-        <h3 className="font-medium text-blue-800 mb-2">Hall Information</h3>
-        <p><strong>Name:</strong> {hall?.name}</p>
-        {hall?.capacity && <p><strong>Capacity:</strong> {hall.capacity} people</p>}
-        {hall?.facilities && hall.facilities.length > 0 && (
-          <p><strong>Facilities:</strong> {hall.facilities.join(', ')}</p>
-        )}
-        {selectedTimeSlot && (
-          <p><strong>Selected Time Slot:</strong> {selectedTimeSlot}</p>
-        )}
-        {selectedDate && (
-          <p><strong>Selected Date:</strong> {new Date(selectedDate).toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric'
-          })}</p>
-        )}
+    <div className="bg-gray-50 min-h-screen p-6">
+      <div className="max-w-3xl mx-auto">
+        {/* Header */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-xl font-bold text-blue-800">Complete Your Booking</h2>
+          <p className="text-gray-600">{department.DeptName} - Finalize your hall reservation</p>
+        </div>
+        
+        {/* Booking Details */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h3 className="text-lg font-semibold mb-4">Booking Details</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="flex items-start">
+                <Calendar className="h-5 w-5 text-blue-600 mt-1 mr-3 flex-shrink-0" />
+                <div>
+                  <p className="text-sm text-gray-500">Date</p>
+                  <p className="font-medium">{formattedDate}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start">
+                <Clock className="h-5 w-5 text-blue-600 mt-1 mr-3 flex-shrink-0" />
+                <div>
+                  <p className="text-sm text-gray-500">Time Slot</p>
+                  <p className="font-medium">{selectedTimeSlot}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="flex items-start">
+                <BookOpen className="h-5 w-5 text-blue-600 mt-1 mr-3 flex-shrink-0" />
+                <div>
+                  <p className="text-sm text-gray-500">Hall</p>
+                  <p className="font-medium">{hall.name}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start">
+                <MapPin className="h-5 w-5 text-blue-600 mt-1 mr-3 flex-shrink-0" />
+                <div>
+                  <p className="text-sm text-gray-500">Location</p>
+                  <p className="font-medium">{hall.location}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="flex flex-wrap gap-2">
+              <div className="bg-gray-100 text-gray-800 text-sm px-3 py-1 rounded-full flex items-center">
+                <Users className="h-3 w-3 mr-1" /> Capacity: {hall.capacity}
+              </div>
+              
+              {hall.projector && (
+                <div className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full flex items-center">
+                  <Monitor className="h-3 w-3 mr-1" /> Projector
+                </div>
+              )}
+              
+              {hall.ac && (
+                <div className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full flex items-center">
+                  <Snowflake className="h-3 w-3 mr-1" /> AC
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        {/* Booking Form */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-lg font-semibold mb-4">Booking Information</h3>
+          
+          {error && (
+            <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 text-red-700">
+              <p className="font-medium">Error</p>
+              <p>{error}</p>
+            </div>
+          )}
+          
+          {success && (
+            <div className="mb-6 bg-green-50 border-l-4 border-green-500 p-4 text-green-700 flex items-start">
+              <CheckCircle className="h-5 w-5 mr-2 flex-shrink-0" />
+              <p>{success}</p>
+            </div>
+          )}
+          
+          <form onSubmit={handleSubmit}>
+            <div className="mb-4">
+              <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="purpose">
+                Purpose of Booking <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                id="purpose"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows={3}
+                placeholder="Describe the purpose of your booking..."
+                value={purpose}
+                onChange={(e) => setPurpose(e.target.value)}
+                required
+              />
+            </div>
+            
+            <div className="mb-6">
+              <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="attendees">
+                Expected Number of Attendees <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                id="attendees"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter number of expected attendees"
+                min={1}
+                max={hall.capacity}
+                value={attendees}
+                onChange={(e) => setAttendees(e.target.value)}
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">Maximum capacity: {hall.capacity}</p>
+            </div>
+            
+            <div className="flex justify-between">
+              <button
+                type="button"
+                onClick={() => navigate(-1)}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+              >
+                Go Back
+              </button>
+              
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    Confirm Booking
+                    <Send className="h-4 w-4 ml-2" />
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-      
-      <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 gap-4">
-          <div className="flex items-center">
-            <label className="font-medium w-1/3">DEPARTMENT:</label>
-            <span className="mx-2">:</span>
-            <select 
-              name="department"
-              value={formData.department}
-              onChange={handleChange}
-              className="flex-1 p-2 border rounded-md"
-              required
-              disabled={isSubmitting}
-            >
-              <option value="">Select Department</option>
-              <option value="Mathematics">Mechanical</option>
-              <option value="Computer Science">Computer Science</option>
-              <option value="Physics">AI-DS</option>
-              <option value="Chemistry">IT</option>
-            </select>
-          </div>
-
-          <div className="flex items-center">
-            <label className="font-medium w-1/3">HALL FOR BOOKING:</label>
-            <span className="mx-2">:</span>
-            <input 
-              type="text"
-              name="hallForBooking"
-              value={formData.hallForBooking}
-              className="flex-1 p-2 border rounded-md bg-gray-100"
-              readOnly
-            />
-          </div>
-
-          <div className="flex items-center">
-            <label className="font-medium w-1/3">DATE:</label>
-            <span className="mx-2">:</span>
-            <input 
-              type="date"
-              name="date"
-              value={formData.date}
-              onChange={handleChange}
-              className={`flex-1 p-2 border rounded-md ${
-                formData.date && !isDateValid(formData.date) ? 'border-red-500' : ''
-              }`}
-              min={new Date().toISOString().split('T')[0]} // Set min date to today
-              required
-              disabled={isSubmitting}
-            />
-          </div>
-          {formData.date && !isDateValid(formData.date) && (
-            <div className="ml-1/3 pl-8 text-red-500 text-sm">
-              Please select a current or future date
-            </div>
-          )}
-
-          <div className="flex items-center">
-            <label className="font-medium w-1/3">TIME FROM:</label>
-            <span className="mx-2">:</span>
-            <input 
-              type="time"
-              name="timeFrom"
-              value={formData.timeFrom}
-              onChange={handleChange}
-              className="flex-1 p-2 border rounded-md"
-              required
-              disabled={isSubmitting}
-            />
-          </div>
-
-          <div className="flex items-center">
-            <label className="font-medium w-1/3">TIME TO:</label>
-            <span className="mx-2">:</span>
-            <input 
-              type="time"
-              name="timeTo"
-              value={formData.timeTo}
-              onChange={handleChange}
-              className={`flex-1 p-2 border rounded-md ${
-                formData.timeFrom && formData.timeTo && 
-                new Date(`2000-01-01T${formData.timeTo}`) <= new Date(`2000-01-01T${formData.timeFrom}`) 
-                  ? 'border-red-500' : ''
-              }`}
-              required
-              disabled={isSubmitting}
-            />
-          </div>
-          {formData.timeFrom && formData.timeTo && 
-            new Date(`2000-01-01T${formData.timeTo}`) <= new Date(`2000-01-01T${formData.timeFrom}`) && (
-            <div className="ml-1/3 pl-8 text-red-500 text-sm">
-              End time must be after start time
-            </div>
-          )}
-
-          <div className="flex items-center">
-            <label className="font-medium w-1/3">REASON:</label>
-            <span className="mx-2">:</span>
-            <textarea
-              name="reason"
-              value={formData.reason}
-              onChange={handleChange}
-              className="flex-1 p-2 border rounded-md"
-              rows="4"
-              placeholder="Describe your purpose for booking"
-              required
-              disabled={isSubmitting}
-            ></textarea>
-          </div>
-        </div>
-
-        <div className="flex mt-6 space-x-4">
-          <button 
-            type="submit" 
-            className={`${
-              isSubmitting ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'
-            } text-white px-4 py-2 rounded-md flex items-center`}
-            disabled={isSubmitting}
-          >
-            {isSubmitting && (
-              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-            )}
-            {isSubmitting ? 'Submitting...' : 'Submit'}
-          </button>
-          <button 
-            type="button" 
-            onClick={handleReset}
-            className="bg-gray-700 text-white px-4 py-2 rounded-md hover:bg-gray-800"
-            disabled={isSubmitting}
-          >
-            Reset
-          </button>
-        </div>
-      </form>
     </div>
   );
 };

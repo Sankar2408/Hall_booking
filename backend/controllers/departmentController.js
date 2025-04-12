@@ -23,14 +23,12 @@ exports.getDepartmentById = async (req, res) => {
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Department not found' });
     }
-    
     res.json(rows[0]);
   } catch (error) {
     console.error('Error fetching department:', error);
     res.status(500).json({ error: 'Failed to fetch department details' });
   }
 };
-
 // Create a new department
 exports.createDepartment = async (req, res) => {
   const { deptName, deptCode } = req.body;

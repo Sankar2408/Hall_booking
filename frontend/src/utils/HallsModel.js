@@ -23,7 +23,7 @@ const FACILITIES = {
   const hallsData = [
     {
       id: 1,
-      name: 'Seminar Hall 1',
+      name: 'lab1',
       capacity: 100,
       facilities: [FACILITIES.PROJECTOR, FACILITIES.AC, FACILITIES.SOUND_SYSTEM],
       image: '/api/placeholder/400/250',
@@ -32,7 +32,7 @@ const FACILITIES = {
     },
     {
       id: 2,
-      name: 'Conference Room A',
+      name: 'lab2',
       capacity: 50,
       facilities: [FACILITIES.WHITEBOARD, FACILITIES.AC, FACILITIES.VIDEO_CONFERENCING],
       image: '/api/placeholder/400/250',
@@ -42,7 +42,7 @@ const FACILITIES = {
     },
     {
       id: 3,
-      name: 'Auditorium',
+      name: 'lab3',
       capacity: 200,
       facilities: [FACILITIES.STAGE, FACILITIES.SOUND_SYSTEM, FACILITIES.AC, FACILITIES.RECORDING],
       image: '/api/placeholder/400/250',
@@ -52,7 +52,7 @@ const FACILITIES = {
     },
     {
       id: 4,
-      name: 'Computer Lab 1',
+      name: 'lab12',
       capacity: 40,
       facilities: [FACILITIES.COMPUTERS, FACILITIES.PROJECTOR, FACILITIES.AC, FACILITIES.WIFI],
       image: '/api/placeholder/400/250',
@@ -145,6 +145,35 @@ const FACILITIES = {
       bookingRules: 'Model displays require prior approval'
     }
   };
+
+ // Example admin halls data
+const adminHalls = [
+  {
+    id: 5,
+    name: 'Assembly Hall',
+    location: 'Main Block - Ground Floor',
+    capacity: 500,
+    facilities: ['Projector', 'Sound System', 'AC'],
+    description: 'Spacious hall for large gatherings and events.'
+  },
+  {
+    id: 6,
+    name: 'Auditorium',
+    location: 'Main Block - 2nd Floor',
+    capacity: 1000,
+    facilities: ['Projector', 'Stage', 'AC'],
+    description: 'Large auditorium suitable for conferences and shows.'
+  },
+  {
+    id: 7,
+    name: 'Conference Hall',
+    location: 'Admin Block - 1st Floor',
+    capacity: 200,
+    facilities: ['Whiteboard', 'Wi-Fi', 'AC'],
+    description: 'Perfect for meetings and corporate events.'
+  }
+];
+
   
   // Track hall bookings - structure: { hallId: { date: { timeSlot: true } } }
   let bookings = {};
@@ -268,7 +297,12 @@ const FACILITIES = {
       }, 300);
     });
   };
-  
+
+// Export function to get admin hall by ID
+export const getAdminHall = (id) => {
+  return adminHalls.find(hall => hall.id === id) || null;
+};
+
   export default {
     FACILITIES,
     CS,
@@ -280,5 +314,6 @@ const FACILITIES = {
     getAvailableHalls,
     getHallDetails,
     checkHallAvailability,
-    bookHall
+    bookHall,
+    getAdminHall
   };

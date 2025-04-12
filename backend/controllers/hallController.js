@@ -236,3 +236,43 @@ exports.deleteHall = async (req, res) => {
     res.status(500).json({ error: 'Failed to delete hall' });
   }
 };
+
+exports.getAvailableHalls = async (req, res) => {
+  const { timeSlot } = req.query;
+
+  if (!timeSlot) {
+    return res.status(400).json({ error: 'Time slot is required' });
+  }
+
+  try {
+    // Fetch all halls excluding those that are already booked in the selected time slot
+    const [rows] = await pool.query(
+      `SELECT h.HallID, h.HallName, h.Location, h.Capacity, d.DeptName 
+       FROM Halls h 
+       JOIN Departments d ON h.DeptID = d.DeptID
+       WHERE h.HallID NOT IN (
+         SELECT HallID FROM Bookings 
+         WHERE TimeSlot = ?
+       )`,
+      [timeSlot]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'No available halls for this time slot' });
+    }
+
+    // Map the response to the frontend format
+    const availableHalls = rows.map(hall => ({
+      id: hall.HallID,
+      name: hall.HallName,
+      location: hall.Location,
+      capacity: hall.Capacity,
+      department: hall.DeptName
+    }));
+
+    res.json(availableHalls);
+  } catch (error) {
+    console.error('Error fetching available halls:', error);
+    res.status(500).json({ error: 'Failed to fetch available halls' });
+  }
+}; 

@@ -32,13 +32,18 @@ const LoginForm = () => {
       if (!response.ok) throw new Error(data.message || 'Login failed');
 
       localStorage.setItem('token', data.token);
+      localStorage.setItem('role', data.role); // Store role in localStorage
       setStaffId(data.staffId);
 
       if (data.isFirstLogin) {
         setIsResetPassword(true);
       } else {
-        // Navigate to StaffView instead of departments
-        navigate('/staffview');
+        // Role-based navigation
+        if (data.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/staffview');
+        }
       }
     } catch (error) {
       setError(error.message);
@@ -51,12 +56,12 @@ const LoginForm = () => {
       setError('Passwords do not match');
       return;
     }
-
+  
     setError('');
     try {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('Unauthorized request');
-
+  
       const response = await fetch('http://localhost:5000/api/auth/reset-password', {
         method: 'POST',
         headers: {
@@ -65,20 +70,25 @@ const LoginForm = () => {
         },
         body: JSON.stringify({ 
           staffId, 
-          newPassword: formData.newPassword,
-          isFirstLogin: false // Set this to false to update the database
+          newPassword: formData.newPassword 
         })
       });
-
+  
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Password reset failed');
-
-      // Update the local token if a new one is returned
+  
+      // Store the new token and role
       if (data.token) {
         localStorage.setItem('token', data.token);
+        localStorage.setItem('role', data.role);
       }
-
-      navigate('/staffview'); // Navigate to StaffView after password reset
+  
+      // Role-based navigation after password reset
+      if (data.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/staffview');
+      }
     } catch (error) {
       setError(error.message);
     }
@@ -90,7 +100,7 @@ const LoginForm = () => {
         <Building2 className="h-12 w-12 text-blue-600" />
       </div>
       <h2 className="text-2xl font-bold text-center mb-8">
-        {isResetPassword ? 'Reset Password' : 'Staff Login'}
+        {isResetPassword ? 'Reset Password' : 'Staff'}
       </h2>
 
       {error && (

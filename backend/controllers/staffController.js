@@ -1,73 +1,65 @@
-// controllers/staffController.js
-const db = require('../config/db');
-const jwt = require('jsonwebtoken');
+const pool = require('../config/db');
 
-// Get the authenticated staff member's profile
-exports.getStaffProfile = async (req, res) => {
+// Get staff details by token
+const getStaffDetails = async (req, res) => {
   try {
-    // The staff ID should be available from the auth middleware
-    const staffId = req.user.id;
-
-    // Query to get staff information
-    const query = 'SELECT staff_id, email, full_name, department, created_at FROM staff WHERE staff_id = ?';
+    const email = req.user.email; // From authentication middleware
     
-    db.query(query, [staffId], (error, results) => {
-      if (error) {
-        console.error('Database error:', error);
-        return res.status(500).json({ 
-          success: false, 
-          message: 'Error retrieving staff profile' 
-        });
-      }
+    const [rows] = await pool.query(
+      'SELECT staff_id, email, full_name, department, role FROM staff WHERE email = ?',
+      [email]
+    );
 
-      if (results.length === 0) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Staff member not found' 
-        });
-      }
-
-      // Return the staff information
-      return res.status(200).json({
-        success: true,
-        data: results[0]
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Staff not found'
       });
+    }
+
+    res.json({
+      success: true,
+      data: rows[0]
     });
   } catch (error) {
-    console.error('Server error:', error);
-    return res.status(500).json({ 
-      success: false, 
-      message: 'Server error' 
+    console.error('Error fetching staff details:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
     });
   }
 };
 
-// Get all staff members (for admin purposes)
-exports.getAllStaff = async (req, res) => {
+const getStaffStats = async (req, res) => {
   try {
-    // Query to get all staff members (exclude password)
-    const query = 'SELECT staff_id, email, full_name, department, created_at FROM staff';
-    
-    db.query(query, (error, results) => {
-      if (error) {
-        console.error('Database error:', error);
-        return res.status(500).json({ 
-          success: false, 
-          message: 'Error retrieving staff list' 
-        });
+    const staffEmail = req.user.email; // Assuming the email is part of the authenticated user's token
+    const [stats] = await pool.query(
+      `SELECT 
+        COUNT(*) as totalBookings,
+        SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approvedBookings,
+        SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pendingBookings
+      FROM bookings 
+      WHERE staff_email = ?`,
+      [staffEmail]
+    );
+    res.json({
+      success: true,
+      data: {
+        totalBookings: parseInt(stats[0].totalBookings) || 0,
+        approvedBookings: parseInt(stats[0].approvedBookings) || 0,
+        pendingBookings: parseInt(stats[0].pendingBookings) || 0
       }
-
-      // Return the staff information
-      return res.status(200).json({
-        success: true,
-        data: results
-      });
     });
   } catch (error) {
-    console.error('Server error:', error);
-    return res.status(500).json({ 
-      success: false, 
-      message: 'Server error' 
+    console.error('Error fetching staff statistics:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
     });
   }
+};
+
+module.exports = {
+  getStaffDetails,
+  getStaffStats
 };
