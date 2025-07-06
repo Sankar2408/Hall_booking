@@ -54,6 +54,9 @@ Powerful tools for administrators to manage booking requests, monitor hall utili
 ![image](https://github.com/user-attachments/assets/4a6fd0d2-b9c9-4539-a26c-890d10196563)
 ![image](https://github.com/user-attachments/assets/a1b7c927-6bd1-434c-a926-9d84bff3c2d9)
 
+![image](https://github.com/user-attachments/assets/5afa1bfe-6791-4e49-bc83-2bd11dcd68e6)
+
+
 
 ## 🧑‍💼 User Roles
 
