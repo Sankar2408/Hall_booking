@@ -15,11 +15,8 @@ A **scalable** and **secure web application** designed to automate college hall 
 - 📝 **Automated Approval Workflow**  
   Bookings go through a structured approval process ensuring proper usage and validation.
 
-- 📊 **Usage Analytics Dashboard**  
-  Track hall usage statistics, peak times, and generate reports for efficient planning.
-
 - 🔔 **Smart Notifications & Reminders**  
-  Email or in-app alerts for booking confirmations, status updates, and upcoming events.
+  Email or in-app alerts for booking confirmations, status updates.
 
 - 🎨 **Clean & Responsive UI**  
   Built with user experience in mind – accessible from desktop or mobile.
@@ -31,18 +28,32 @@ A **scalable** and **secure web application** designed to automate college hall 
 | Technology | Description |
 |------------|-------------|
 | **Frontend** | HTML, CSS, JavaScript (React/Vanilla) |
-| **Backend**  | Node.js / Express / Django (as per your project) |
-| **Database** | Firebase / MongoDB / MySQL |
-| **Authentication** | Firebase Auth / JWT / Role-based access |
-| **Hosting** | Firebase / Heroku / Netlify |
+| **Backend**  | Node.js / Express |
+| **Database** | MySQL |
+| **Authentication** |JWT / Role-based access |
 
 ---
-
 ## 📸 Screenshots
 
-> _Include 2-3 images or GIFs of your dashboard, booking form, and analytics page._
+### 👨‍🏫 Staff Interface
+
+![image](https://github.com/user-attachments/assets/fb4ac3cf-ed6b-4439-93ee-fcf89c9d67c9)
+> ![image](https://github.com/user-attachments/assets/ab8d6191-9dd6-4c03-b9e9-0ec564509ef2)
+> ![image](https://github.com/user-attachments/assets/c3fca02e-0fce-4e54-9fb8-41a2d4ef0161)
+> ![image](https://github.com/user-attachments/assets/5e1973d3-a249-49ad-a130-89529dda73dc)
+> ![image](https://github.com/user-attachments/assets/2d7984dc-1ceb-417f-a77e-ceaa0ed29334)
+> ![image](https://github.com/user-attachments/assets/64b26c4e-0ce3-4fce-b4f4-5b5fbb8ad82d)
 
 ---
+
+### 🛠️ Admin Interface
+
+Powerful tools for administrators to manage booking requests, monitor hall utilization, and configure system settings.
+
+![image](https://github.com/user-attachments/assets/9f50820c-f2e4-48ed-a1eb-49116a56e31d)
+![image](https://github.com/user-attachments/assets/4a6fd0d2-b9c9-4539-a26c-890d10196563)
+![image](https://github.com/user-attachments/assets/a1b7c927-6bd1-434c-a926-9d84bff3c2d9)
+
 
 ## 🧑‍💼 User Roles
 
@@ -52,14 +63,4 @@ A **scalable** and **secure web application** designed to automate college hall 
 - **Faculty**  
   Book halls, view bookings, cancel requests.
 
-- **Student**  
-  Request bookings, check status, view upcoming events.
-
 ---
-
-## 🛠 Setup Instructions
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/your-username/hall-reservation-system.git
-   cd hall-reservation-system
